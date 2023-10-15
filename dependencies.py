@@ -9,7 +9,7 @@ from typing import Optional
 SECRET_KEY = "f03f0d5cdfadaaba51dba7f14c85422c98bda1521a78abb7186e069502ed14d7"  
 ALGORITHM = "HS256"  
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="http://localhost:8000/api/token")
 
 def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
     credentials_exception = HTTPException(
