@@ -7,6 +7,7 @@ Created on Tue Oct 10 16:59:35 2023
 """
 
 from fastapi import FastAPI, HTTPException, status, Depends
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from typing import List, Annotated, Optional
 from pydantic import BaseModel
@@ -77,7 +78,7 @@ async def create_request(request:createRequest, db:db_dependency, current_user: 
     return ('Application successfully submit!')
 
 @app.get('/card_records', response_model=List[createRequest])
-async def get_records_by_stud_id(stud_id:int, db:db_dependency, current_user: dict = Depends(is_admin)):
+async def get_records_by_stud_id(stud_id:int, db:db_dependency, current_user: dict = Depends(is_user)):
         result = db.query(models.request).filter(models.request.stud_number == stud_id).all()
         if result is None:
             raise HTTPException(status_code=404, detail='Student number not found!')
@@ -90,16 +91,31 @@ async def get_request_status(request_id:int, db:db_dependency):
         raise HTTPException(status_code=404, detail='Request record not found!')
     return result
 
-@app.get('/all_requests', response_model=List[createRequest])
+@app.get('/all_requests', response_model=List[studCard])
 async def list_all_requests(db: db_dependency, current_user: dict = Depends(is_admin)):
     results = db.query(models.request).all()
-    if not results:
+    if result is None:
         raise HTTPException(status_code=404, detail='No requests found!')
     return results
 
 @app.get('/my_request', response_model=List[createRequest])
 async def view_own_request(db: db_dependency, current_user: dict = Depends(is_user)):
     result = db.query(models.request).filter(models.request.stud_number == current_user["id"]).all()
-    if not result:
+    if result is None:
         raise HTTPException(status_code=404, detail='No request found for the current user!')
     return result
+
+@app.patch('/request_validate', response_model=List[studCard])
+async def card_validation(request_id:int, statusUpdate:requestUpdate, db: db_dependency, current_user: dict = Depends(is_admin)):
+    db_validation = db.query(models.request).filter(models.request.id == request_id).all()
+    if db_validation is None:
+        raise HTTPException(status_code=404, detail='No requests found!')
+    db_validation_data = statusUpdate.dict(exclude_unset = True)
+    for key, value in db_validation_data.items():
+        setattr(db_validation, key, value)
+    db.add(db_validation)
+    db.commit
+    db.refresh(db_validation)
+    return db_validation
+        
+        
