@@ -15,6 +15,7 @@ from random import randint
 
 import models
 from database import SessionLocal, engine
+from dependencies import get_current_user, is_admin, is_user
 
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
@@ -58,7 +59,7 @@ def generate_card_number():
 
 #create endpoints
 @app.post('/apply_student_card/')
-async def create_request(request:createRequest, db:db_dependency):
+async def create_request(request:createRequest, db:db_dependency, current_user: dict = Depends(is_user)):
     db_request = models.request(
         name=request.name,
         stud_number=request.stud_number,
@@ -76,7 +77,7 @@ async def create_request(request:createRequest, db:db_dependency):
     return ('Application successfully submit!')
 
 @app.get('/card_records', response_model=List[createRequest])
-async def get_records_by_stud_id(stud_id:int, db:db_dependency):
+async def get_records_by_stud_id(stud_id:int, db:db_dependency, current_user: dict = Depends(is_admin)):
         result = db.query(models.request).filter(models.request.stud_number == stud_id).all()
         if result is None:
             raise HTTPException(status_code=404, detail='Student number not found!')
@@ -87,4 +88,18 @@ async def get_request_status(request_id:int, db:db_dependency):
     result = db.query(models.request).filter(models.request.id == request_id).first()
     if result is None:
         raise HTTPException(status_code=404, detail='Request record not found!')
+    return result
+
+@app.get('/all_requests', response_model=List[createRequest])
+async def list_all_requests(db: db_dependency, current_user: dict = Depends(is_admin)):
+    results = db.query(models.request).all()
+    if not results:
+        raise HTTPException(status_code=404, detail='No requests found!')
+    return results
+
+@app.get('/my_request', response_model=List[createRequest])
+async def view_own_request(db: db_dependency, current_user: dict = Depends(is_user)):
+    result = db.query(models.request).filter(models.request.stud_number == current_user["id"]).all()
+    if not result:
+        raise HTTPException(status_code=404, detail='No request found for the current user!')
     return result
