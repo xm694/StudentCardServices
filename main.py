@@ -42,7 +42,15 @@ class studCard(studBase):
     
     class Config():
         orm_mode = True
-    
+
+class requestUpdate(BaseModel):
+    stud_number:Optional[int]
+    name:Optional[str]
+    program:Optional[str]
+    card_number:Optional[int]
+    status:Optional[str]
+
+
 #Dependency
 def get_db():
     db = SessionLocal()
