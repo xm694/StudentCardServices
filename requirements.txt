@@ -1,0 +1,8 @@
+fastapi==0.103.2
+psycopg2==2.9.5
+SQLAlchemy==1.4.46
+uvicorn==0.20.0
+pydantic==1.8.2
+pyjwt==2.6.0
+databases==0.5.2
+python-jose==3.3.0
