@@ -13,6 +13,7 @@ from typing import List, Annotated, Optional
 from pydantic import BaseModel
 from datetime import date
 from random import randint
+from fastapi.middleware.cors import CORSMiddleware
 
 import models
 from database import SessionLocal, engine
