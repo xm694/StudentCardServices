@@ -21,6 +21,18 @@ from dependencies import get_current_user, is_admin, is_user
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
+origins = [
+    "*"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 #base models set up
 class studBase(BaseModel):
     stud_number:int
@@ -101,10 +113,10 @@ async def get_request_status(request_id:int, db:db_dependency):
 
 @app.get('/all_requests', response_model=List[studCard])
 async def list_all_requests(db: db_dependency, current_user: dict = Depends(is_admin)):
-    results = db.query(models.request).all()
+    result = db.query(models.request).all()
     if result is None:
         raise HTTPException(status_code=404, detail='No requests found!')
-    return results
+    return result
 
 @app.get('/my_request', response_model=List[createRequest])
 async def view_own_request(db: db_dependency, current_user: dict = Depends(is_user)):
