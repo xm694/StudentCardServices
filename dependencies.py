@@ -1,4 +1,5 @@
 import jwt
+from jwt import InvalidTokenError, ExpiredSignatureError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
@@ -21,7 +22,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
         # Decode the token
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         
-       # Extract details from the payload
+        # Extract details from the payload
         user_id: int = payload.get("id")
         email: str = payload.get("sub")
         first_name: str = payload.get("first_name")
@@ -40,6 +41,12 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
             "last_name": last_name,
             "permissions": permissions,
         }
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     except JWTError:
         raise credentials_exception
 
