@@ -119,6 +119,20 @@ async def list_all_requests(db: db_dependency, current_user: dict = Depends(is_a
         raise HTTPException(status_code=404, detail='No requests found!')
     return result
 
+@app.get('/pending_requests', response_model=List[studCard])
+async def list_pending_requests(db: db_dependency, current_user: dict = Depends(is_admin)):
+    result = db.query(models.request).where(models.request.status == "Pending").all()
+    if result is None:
+        raise HTTPException(status_code=404, detail='No pending requests found!')
+    return result
+
+@app.get('/processed_requests', response_model=List[studCard])
+async def list_processed_requests(db: db_dependency, current_user: dict = Depends(is_admin)):
+    result = db.query(models.request).where(models.request.status != "Pending").all()
+    if result is None:
+        raise HTTPException(status_code=404, detail='No processed requests found!')
+    return result
+
 @app.get('/my_request', response_model=List[createRequest])
 async def view_own_request(db: db_dependency, current_user: dict = Depends(is_user)):
     result = db.query(models.request).filter(models.request.stud_number == current_user["id"]).all()
@@ -138,5 +152,31 @@ async def card_validation(request_id:int, statusUpdate:requestUpdate, db: db_dep
     db.commit
     db.refresh(db_validation)
     return db_validation
-        
-        
+
+@app.put("/send/{card_number}")
+async def send_studentid(card_number: int, db: db_dependency, current_user: dict = Depends(is_admin)):
+    id_request = db.query(models.request).where(models.request.card_number == card_number).first()
+
+    if not id_request:
+        raise HTTPException(status_code=404, detail="No permits found")
+    else:
+        id_request.status = "Sent"
+
+        db.add(id_request)
+        db.commit()
+
+        return {"code": "success", "message": "Student ID sent to applicant"}
+
+@app.put("/reject/{card_number}")
+async def reject_request(card_number: int, db: db_dependency, current_user: dict = Depends(is_admin)):
+    id_request = db.query(models.request).where(models.request.card_number == card_number).first()
+
+    if not id_request:
+        raise HTTPException(status_code=404, detail="No permits found")
+    else:
+        id_request.status = "Rejected"
+
+        db.add(id_request)
+        db.commit()
+
+        return {"code": "success", "message": "Request rejected"}
